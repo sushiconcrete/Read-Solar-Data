@@ -1,4 +1,5 @@
 # Read-Solar-Data
+Using R to read solar data.
 My workflow for this project can be divided into the following steps:\
 
 1.  Focus on the first zip file to look for the pattern within it.
