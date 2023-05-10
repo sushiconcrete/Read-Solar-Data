@@ -19,7 +19,3 @@ My workflow for this project can be divided into the following steps:\
             -   In my convert to numeric function, it's important to convert only char into double instead of posixct, otherwise the posixct elements will end up with wrong values.
 2.  Apply functions to the rest files
     -   When applying functions, I notice that it's worthy to add a if condition that recognizes the input value is the one we want to manipulate. Otherwise it will potentially change the data.
-
-    -   I assign distinct variables name to each df instead of overwriting them since I think it's easy to debug and double check. For example, if one dataframe is wrong, I can locate it fast and easily.
-
-    -   But assigning the variables names can be overwhelming, so I just search them and replace the words partially.
