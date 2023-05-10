@@ -1,0 +1,1170 @@
+---
+---
+---
+
+# Test on the first zip
+
+```{r}
+library(readr)
+library(ggplot2)
+library(tidyr)
+```
+
+## wea file
+
+```{r}
+# .wea file
+preview_lines <- readLines("USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021/USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021.wea", n = 100)
+#cat(preview_lines, sep = "\n")
+wea_data <- read.table("USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021/USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021.wea", skip = 6, sep = " ", header = FALSE)
+colnames(wea_data) <- c("Month", "Day", "Hour", "Global_Horizontal_Irradiance", "Direct_Normal_Irradiance")
+head(wea_data)
+```
+
+## Pvsyst file
+
+```{r}
+#.pvsyst file
+getwd()
+pvsline <- readLines("USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021/USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021.pvsyst", n = 50)
+pvsdata <- read.table("USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021/USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021.pvsyst", skip = 14, sep = ",", col.names = c("Year", "Month", "Day", "Hour", "Minute", "GHI", "DHI", "DNI", "Tamb", "WindVel", "WindDir"))
+head(pvsdata)
+```
+
+## Stat file
+
+First, I will manually read each table and store it as a data-frame. Then, I will look for shared patterns among them and create functions to deconstruct the mechanics. Along with this, I will include a verification step to each monthly data set, which will involve manual reading tests to ensure the accuracy of the extracted data.
+
+-   Read the stat file as character vector using read_lines, and by specifying the encoding type, we can resolve the encoding issues.
+
+```{r}
+sf_statlines <- read_lines("USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021/USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021.stat", locale = locale(encoding = "ISO-8859-1"))
+```
+
+### Basic Functions Built-up
+
+```{r}
+# Function
+
+# Transpose a datafram
+transpose_dataframe <- function(data) {
+  row_names <- data$X
+  data$X <- NULL
+  transposed_data <- t(data)
+  transposed_data <- as.data.frame(transposed_data)
+  colnames(transposed_data) <- row_names
+  rownames(transposed_data) <- colnames(data)
+  return(transposed_data)
+}
+
+
+# Convert the column Day:Hour into time variables
+my_convert_to_time <- function(tdata){
+  dayhour_col_vector <- grep("Day:Hour", names(tdata))
+  if(length(dayhour_col_vector) == 0){
+    warning("Day:Hour not found")
+    return(tdata)
+  }
+  for (i in dayhour_col_vector) {
+    for (j in 1:nrow(tdata)) {
+      tdata[j,i]<-paste0("2023-", j,"-",substr(tdata[j,i],1,2), " ", substr(tdata[j,i],4,5), ":00:00")
+    #print(as.POSIXct(tdata[j,i], format="%Y-%m-%d %H:%M:%S"))
+    }
+  }
+  tdata[,dayhour_col_vector] <- lapply(tdata[,dayhour_col_vector], as.POSIXct, format="%Y-%m-%d %H:%M:%S")
+  return(tdata)
+}
+
+# Read the char vactor as df
+read_stat <- function(title, statlines){
+  starts = grep(title, statlines)
+  # grepl gives a boolean vector showing the seaching result, and we negate that result to 
+  # subset the sf_statlines
+  ends = grep(" - ", statlines[(starts[1]+1) : length(statlines)], fixed = TRUE)
+  temp <- statlines[(starts[1]+1) : (starts[1]+ends[1]-1)]
+  temp <- temp[temp != ""]
+  # use gsub with regular expression to rule out NAs in the first and last column
+  # ^ means at the beginning, + means that the pattern might appear one or more times, 
+  # $ means is the end indicator, \\s and \\t represents space and tab respectively
+  # gsub traverse the element in char vector, and see if the beggining and the end of an 
+  # element   is matching to the regular expression
+  temp <- gsub("^(\\s\\t)+|(\\t)+$", "", temp) 
+  data <- read.table(text = temp, sep = '\t', header = TRUE)
+  return(data)
+}
+
+
+
+# convert only char elements into numeric(double) for a df
+df_to_numeric <- function(data){
+  char_cols <- sapply(data, is.character)
+  data[char_cols] <- lapply(data[char_cols], as.numeric)
+  return(data)
+}
+
+# for hourly df: convert the first column to the row's name
+first_row_to_colnames <- function(data){
+  rownames(data) <- data$X
+  data <- data[, -1]
+  return(data)
+}
+
+# Turn hourly data into more a tidy data with 3 cols
+hourly_3_cols <- function(data){
+  data <- head(data, nrow(data) - 2) # remove max and min
+  col_names <- colnames(data)
+  row_names <- rownames(data)
+  vec <- unlist(data) 
+  new_df <- data.frame(col = vec)
+ # new_df <- cbind(new_df,row_names)
+  new_df <- cbind(new_df,c(0:23))
+  col_names <- rep(c(1:12), each = 12)
+  new_df <- cbind(new_df,col_names)
+  rownames(new_df) <- NULL
+  return(new_df)
+}
+
+plot_hourly_df <- function(combined_df){
+  var_names <- c("Dry Bulb temperatures", "Dew Point temperatures", 
+               "Relative Humidity", "Direct Normal Solar Radiation", 
+               "Wind Speed")
+# Create heat maps along each calname with repect to month and hour
+  for (name in var_names) {
+    p <- ggplot(combined_df,
+        aes(x = Hour, y = Month, fill = combined_df[,name])) +
+    geom_tile() +
+    scale_fill_gradient(low = "white", high = "red") +
+    labs(x = "Hour", y = "Month", fill = name) +
+    ggtitle(name)
+    print(p)
+  }
+}
+```
+
+-   Monthly Statistics for Dry Bulb temperatures
+
+    ```{r}
+    sf_statlines <- read_lines("USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021/USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021.stat", locale = locale(encoding = "ISO-8859-1"))
+    data <- read_stat("Monthly Statistics for Dry Bulb temperatures",sf_statlines)
+    tdata <- transpose_dataframe(data)
+    tdata <- my_convert_to_time(tdata)
+    tdata <- df_to_numeric(tdata)
+    head(tdata)
+
+    #starts = grep("Monthly Statistics for Dry Bulb temperatures", sf_statlines)
+    # grepl gives a boolean vector showing the seaching result, and we negate that result to 
+    # subset the sf_statlines
+    #ends = grep(" - ", sf_statlines[(starts[1]+1) : length(sf_statlines)], fixed = TRUE)
+    #temp <- sf_statlines[(starts[1]+1) : (starts[1]+ends[1]-1)]
+    #temp <- temp[temp != ""]
+    # use gsub with regular expression to rule out NAs in the first and last column
+    # ^ means at the beginning, + means that the pattern might appear one or more times, 
+    # $ means is the end indicator, \\s and \\t represents space and tab respectively
+    # gsub traverse the element in char vector, and see if the beggining and the end of a element is matching to the regular expression
+    #temp <- gsub("^(\\s\\t)+|(\\t)+$", "", temp) 
+    #data <- read.table(text = temp, sep = '\t', header = TRUE)
+    ```
+
+    -   Verification: Maximum Dry Bulb temperature of 37.8C on Jun 8" and Minimum Dry Bulb temperature of -0.8C on Jan 2"
+    -   **According to the extracted data, they are consistent.**
+
+```{r}
+print(tdata[which(tdata$`Maximum ` == max(tdata$`Maximum `))[1],])
+print(tdata[which(tdata$`Minimum ` == min(tdata$`Minimum `))[1],])
+```
+
+-   Monthly Statistics for Dew Point temperatures
+
+    ```{r}
+    data <- read_stat("Monthly Statistics for Dew Point temperatures",sf_statlines)
+    tdata <- transpose_dataframe(data)
+    tdata <- my_convert_to_time(tdata)
+    tdata <- df_to_numeric(tdata)
+    head(tdata)
+
+    ```
+
+    -   Verification: Maximum Dew Point temperature of 18.3C on Aug 15" and Minimum Dew Point temperature of -11.2C on Dec 31"
+
+        **According to the extracted data, they are consistent.**
+
+    ```{r}
+    print(tdata[which(tdata$`Maximum ` == max(tdata$`Maximum `))[1],])
+    print(tdata[which(tdata$`Minimum ` == min(tdata$`Minimum `))[1],])
+    ```
+
+-   Average Hourly Statistics for Dry Bulb temperatures
+
+    ```{r}
+    data <- read_stat("Average Hourly Statistics for Dry Bulb temperatures",sf_statlines)
+    data <- first_row_to_colnames(data)
+    data <- hourly_3_cols(data)
+    head(data)
+    #dayhour_col_vector <- grep("Day:Hour", names(data))
+    #dayhour_col_vector
+    ```
+
+-   Average Hourly Statistics for Dew Point temperatures
+
+    ```{r}
+    data <- read_stat("Average Hourly Statistics for Dew Point temperatures",sf_statlines)
+    data <- first_row_to_colnames(data)
+    data <- hourly_3_cols(data)
+    head(data)
+    ```
+
+-   Average Hourly Relative Humidity
+
+    ```{r}
+    data <- read_stat("Average Hourly Relative Humidity",sf_statlines)
+    data
+    ```
+
+-   Monthly Wind Direction {Interval 11.25 deg from displayed deg)
+
+    ```{r}
+    data <- read_stat("Monthly Wind Direction",sf_statlines)
+    tdata <- transpose_dataframe(data)
+    tdata <- df_to_numeric(tdata)
+    tdata
+    ```
+
+-   Average Hourly Statistics for Direct Normal Solar Radiation
+
+    ```{r}
+    #Max Hour is 13, which indicates that the highest average solar radiation occurs between 13:01 and 14:00 (1:01 PM and 2:00 PM) in that month.
+    data <- read_stat("Average Hourly Statistics for Direct Normal Solar Radiation",sf_statlines)
+    data
+    ```
+
+-   Monthly Statistics for Wind Speed
+
+    ```{r}
+    data <- read_stat("Monthly Statistics for Wind Speed",sf_statlines)
+    tdata <- transpose_dataframe(data)
+    tdata <- my_convert_to_time(tdata)
+    tdata <- df_to_numeric(tdata)
+    tdata
+    ```
+
+    -   Verification: Maximum Wind Speed of 12.4 m/s on Dec 31" and Minimum Wind Speed of 0.0 m/s on Jan 2"
+
+        **According to the extracted data, they are consistent.**
+
+    ```{r}
+    print(tdata[which(tdata$`Maximum ` == max(tdata$`Maximum `))[1],])
+    print(tdata[which(tdata$`Minimum ` == min(tdata$`Minimum `))[1],])
+    ```
+
+-   Average Hourly Statistics for Wind Speed
+
+    ```{r}
+    data <- read_stat("Average Hourly Statistics for Wind Speed",sf_statlines)
+    data
+    ```
+
+### Combine hourly data
+
+After building up the functions and conducting a few tests, it's time to integrate all of them into one with respect to the titles.
+
+```{r}
+data1 <- read_stat("Average Hourly Statistics for Dry Bulb temperatures",sf_statlines)
+data1 <- first_row_to_colnames(data1)
+data1 <- hourly_3_cols(data1)
+head(data1)
+
+data2 <- read_stat("Average Hourly Statistics for Dew Point temperatures",sf_statlines)
+data2 <- first_row_to_colnames(data2)
+data2 <- hourly_3_cols(data2)
+head(data2)
+
+data3 <- read_stat("Average Hourly Relative Humidity",sf_statlines)
+data3 <- first_row_to_colnames(data3)
+data3 <- hourly_3_cols(data3)
+head(data3)
+
+data4 <- read_stat("Average Hourly Statistics for Direct Normal Solar Radiation",sf_statlines)
+data4 <- first_row_to_colnames(data4)
+data4 <- hourly_3_cols(data4)
+head(data4)
+
+data5 <- read_stat("Average Hourly Statistics for Wind Speed",sf_statlines)
+data5 <- first_row_to_colnames(data5)
+data5 <- hourly_3_cols(data5)
+head(data5)
+
+
+
+time_df <- data1[,2:3]
+combined_df <- cbind(time_df, data1[, 1],data2[, 1],data3[, 1],data4[, 1],data5[, 1])
+colnames(combined_df) <- c("Hour", "Month" ,"Dry Bulb temperatures", "Dew Point temperatures", "Relative Humidity", "Direct Normal Solar Radiation", "Wind Speed")
+combined_df <- df_to_numeric(combined_df)
+head(combined_df)
+```
+
+### Plotting Hourly Integrated Data
+
+```{r}
+plot_hourly_df(combined_df)
+```
+
+# Apply to all five zips
+
+```{r}
+library(readr)
+library(ggplot2)
+library(tidyr)
+read_wea <- function(path){
+#cat(preview_lines, sep = "\n")
+  wea_data <- read.table(path, skip = 6, sep = " ", header = FALSE)
+  colnames(wea_data) <- c("Month", "Day", "Hour", "Global_Horizontal_Irradiance", "Direct_Normal_Irradiance")
+  return(wea_data)
+}
+
+read_pvsyst <- function(path){
+  #cat(preview_lines, sep = "\n")
+  pvsdata <- read.table(path, skip = 14, sep = ",", col.names = c("Year", "Month", "Day", "Hour", "Minute", "GHI", "DHI", "DNI", "Tamb", "WindVel", "WindDir"))
+  return(pvsdata)
+}
+
+combine_hour <- function(data1, data2, data3, data4, data5){
+  time_df <- data1[,2:3]
+  combined_df <- cbind(time_df, data1[, 1],data2[, 1],data3[, 1],data4[, 1],data5[, 1])
+  colnames(combined_df) <- c("Hour", "Month" ,"Dry Bulb temperatures", "Dew Point temperatures", "Relative Humidity", "Direct Normal Solar Radiation", "Wind Speed")
+  combined_df <- df_to_numeric(combined_df)
+  return(combined_df)
+}
+
+
+
+#Stat
+# Function
+
+# Transpose a datafram
+transpose_dataframe <- function(data) {
+  row_names <- data$X
+  data$X <- NULL
+  transposed_data <- t(data)
+  transposed_data <- as.data.frame(transposed_data)
+  colnames(transposed_data) <- row_names
+  rownames(transposed_data) <- colnames(data)
+  return(transposed_data)
+}
+
+
+# Convert the column Day:Hour into time variables
+my_convert_to_time <- function(tdata){
+  dayhour_col_vector <- grep("Day:Hour", names(tdata))
+  if(length(dayhour_col_vector) == 0){
+    warning("Day:Hour not found")
+    return(tdata)
+  }
+  for (i in dayhour_col_vector) {
+    for (j in 1:nrow(tdata)) {
+      tdata[j,i]<-paste0("2023-", j,"-",substr(tdata[j,i],1,2), " ", substr(tdata[j,i],4,5), ":00:00")
+    #print(as.POSIXct(tdata[j,i], format="%Y-%m-%d %H:%M:%S"))
+    }
+  }
+  tdata[,dayhour_col_vector] <- lapply(tdata[,dayhour_col_vector], as.POSIXct, format="%Y-%m-%d %H:%M:%S")
+  return(tdata)
+}
+
+# Read the char vactor as df
+read_stat <- function(title, statlines){
+  starts = grep(title, statlines)
+  # grepl gives a boolean vector showing the seaching result, and we negate that result to 
+  # subset the sf_statlines
+  ends = grep(" - ", statlines[(starts[1]+1) : length(statlines)], fixed = TRUE)
+  temp <- statlines[(starts[1]+1) : (starts[1]+ends[1]-1)]
+  temp <- temp[temp != ""]
+  # use gsub with regular expression to rule out NAs in the first and last column
+  # ^ means at the beginning, + means that the pattern might appear one or more times, 
+  # $ means is the end indicator, \\s and \\t represents space and tab respectively
+  # gsub traverse the element in char vector, and see if the beggining and the end of an 
+  # element   is matching to the regular expression
+  temp <- gsub("^(\\s\\t)+|(\\t)+$", "", temp) 
+  data <- read.table(text = temp, sep = '\t', header = TRUE)
+  return(data)
+}
+
+
+
+# convert only char elements into numeric(double) for a df
+df_to_numeric <- function(data){
+  char_cols <- sapply(data, is.character)
+  data[char_cols] <- lapply(data[char_cols], as.numeric)
+  return(data)
+}
+
+# for hourly df: convert the first column to the row's name
+first_row_to_colnames <- function(data){
+  rownames(data) <- data$X
+  data <- data[, -1]
+  return(data)
+}
+
+# Turn hourly data into a more tidy data with 3 cols
+hourly_3_cols <- function(data){
+  data <- head(data, nrow(data) - 2) # remove max and min
+  col_names <- colnames(data)
+  row_names <- rownames(data)
+  vec <- unlist(data) 
+  new_df <- data.frame(col = vec)
+ # new_df <- cbind(new_df,row_names)
+  new_df <- cbind(new_df,c(0:23))
+  col_names <- rep(c(1:12), each = 12)
+  new_df <- cbind(new_df,col_names)
+  rownames(new_df) <- NULL
+  return(new_df)
+}
+
+plot_hourly_df <- function(combined_df){
+  var_names <- c("Dry Bulb temperatures", "Dew Point temperatures", 
+               "Relative Humidity", "Direct Normal Solar Radiation", 
+               "Wind Speed")
+# Create heat maps along each calname with repect to month and hour
+  for (name in var_names) {
+    p <- ggplot(combined_df,
+        aes(x = Hour, y = Month, fill = combined_df[,name])) +
+    geom_tile() +
+    scale_fill_gradient(low = "white", high = "red") +
+    labs(x = "Hour", y = "Month", fill = name) +
+    ggtitle(name)
+    print(p)
+  }
+}
+```
+
+## San Francisco
+
+### .wea file
+
+```{r}
+# .wea file
+sf_path_wea <- "USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021/USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021.wea"
+wea_data_sf <- read_wea(sf_path_wea)
+head(wea_data_sf)
+```
+
+### .pvsyst file
+
+```{r}
+sf_path_pvsyst <- "USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021/USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021.pvsyst"
+sf_pvsyst_data <- read_pvsyst(sf_path_pvsyst)
+head(sf_pvsyst_data)
+```
+
+### .stat file
+
+```{r}
+sf_statlines <- read_lines("USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021/USA_CA_Fairfield-San.Francisco.Bay.Reserve.998011_TMYx.2007-2021.stat", locale = locale(encoding = "ISO-8859-1"))
+```
+
+#### Monthly Statistics for Dry Bulb temperatures
+
+```{r}
+sf_stat_data_month_dry_bulb_temp <- read_stat("Monthly Statistics for Dry Bulb temperatures",sf_statlines)
+sf_stat_data_month_dry_bulb_temp_t <- transpose_dataframe(sf_stat_data_month_dry_bulb_temp)
+sf_stat_data_month_dry_bulb_temp_t <- my_convert_to_time(sf_stat_data_month_dry_bulb_temp_t)
+sf_stat_data_month_dry_bulb_temp_t <- df_to_numeric(sf_stat_data_month_dry_bulb_temp_t)
+head(sf_stat_data_month_dry_bulb_temp_t)
+```
+
+#### Monthly Statistics for Dew Point temperatures
+
+```{r}
+sf_stat_data_month_dew_point_temp <- read_stat("Monthly Statistics for Dew Point temperatures",sf_statlines)
+sf_stat_data_month_dew_point_temp_t <- transpose_dataframe(sf_stat_data_month_dew_point_temp)
+sf_stat_data_month_dew_point_temp_t <- my_convert_to_time(sf_stat_data_month_dew_point_temp_t)
+sf_stat_data_month_dew_point_temp_t <- df_to_numeric(sf_stat_data_month_dew_point_temp_t)
+head(sf_stat_data_month_dew_point_temp_t)
+```
+
+#### Average Hourly Statistics for Dry Bulb
+
+```{r}
+sf_stat_data_hour_dry_bulb_temp <- read_stat("Average Hourly Statistics for Dry Bulb temperatures",sf_statlines)
+sf_stat_data_hour_dry_bulb_temp <- first_row_to_colnames(sf_stat_data_hour_dry_bulb_temp)
+head(sf_stat_data_hour_dry_bulb_temp)
+```
+
+#### Average Hourly Statistics for Dew Point temperatures
+
+```{r}
+sf_stat_data_hour_dew_point_temp <- read_stat("Average Hourly Statistics for Dew Point temperatures",sf_statlines)
+sf_stat_data_hour_dew_point_temp <- first_row_to_colnames(sf_stat_data_hour_dew_point_temp)
+head(sf_stat_data_hour_dew_point_temp)
+```
+
+#### Average Hourly Relative Humidity
+
+```{r}
+sf_stat_data_hour_relative_humid <- read_stat("Average Hourly Relative Humidity",sf_statlines)
+sf_stat_data_hour_relative_humid <- first_row_to_colnames(sf_stat_data_hour_relative_humid)
+head(sf_stat_data_hour_relative_humid)
+```
+
+#### Monthly Wind Direction
+
+```{r}
+sf_stat_data_month_wind_direction <- read_stat("Monthly Wind Direction",sf_statlines)
+sf_stat_data_month_wind_direction_t <- transpose_dataframe(sf_stat_data_month_wind_direction)
+sf_stat_data_month_wind_direction_t <- df_to_numeric(sf_stat_data_month_wind_direction_t)
+head(sf_stat_data_month_wind_direction_t)
+```
+
+#### Average Hourly Statistics for Direct Normal Solar Radiation
+
+```{r}
+sf_stat_data_hour_dircect_NSR <- read_stat("Average Hourly Statistics for Direct Normal Solar Radiation",sf_statlines)
+sf_stat_data_hour_dircect_NSR <- first_row_to_colnames(sf_stat_data_hour_dircect_NSR)
+head(sf_stat_data_hour_dircect_NSR)
+```
+
+#### Monthly Statistics for Wind Speed
+
+```{r}
+sf_stat_data_month_wind_speed <- read_stat("Monthly Statistics for Wind Speed",sf_statlines)
+sf_stat_data_month_wind_speed_t <- transpose_dataframe(sf_stat_data_month_wind_speed)
+sf_stat_data_month_wind_speed_t <- my_convert_to_time(sf_stat_data_month_wind_speed_t)
+sf_stat_data_month_wind_speed_t <- df_to_numeric(sf_stat_data_month_wind_speed_t)
+head(sf_stat_data_month_wind_speed_t)
+```
+
+#### Average Hourly Statistics for Wind Speed
+
+```{r}
+sf_stat_data_hour_wind_speed <- read_stat("Average Hourly Relative Humidity",sf_statlines)
+sf_stat_data_hour_wind_speed <- first_row_to_colnames(sf_stat_data_hour_wind_speed)
+head(sf_stat_data_hour_wind_speed)
+```
+
+### Combine Hourly and Plot
+
+```{r}
+# Combine
+sf_stat_data_hour_dry_bulb_temp_3_cols <- hourly_3_cols(sf_stat_data_hour_dry_bulb_temp)
+head(sf_stat_data_hour_dry_bulb_temp_3_cols)
+
+
+sf_stat_data_hour_dew_point_temp_3_cols <- hourly_3_cols(sf_stat_data_hour_dew_point_temp)
+head(sf_stat_data_hour_dew_point_temp_3_cols)
+
+
+sf_stat_data_hour_relative_humid_3_cols <- hourly_3_cols(sf_stat_data_hour_relative_humid)
+head(sf_stat_data_hour_relative_humid_3_cols)
+
+
+sf_stat_data_hour_dircect_NSR_3_cols <- hourly_3_cols(sf_stat_data_hour_relative_humid)
+head(sf_stat_data_hour_dircect_NSR_3_cols)
+
+sf_stat_data_hour_wind_speed_3_col <- hourly_3_cols(sf_stat_data_hour_wind_speed)
+head(sf_stat_data_hour_wind_speed_3_col)
+
+sf_hour_combined_df <- combine_hour(sf_stat_data_hour_dry_bulb_temp_3_cols,sf_stat_data_hour_dew_point_temp_3_cols,sf_stat_data_hour_relative_humid_3_cols,sf_stat_data_hour_dircect_NSR_3_cols,sf_stat_data_hour_wind_speed_3_col)
+head(sf_hour_combined_df)
+
+
+#Plot
+plot_hourly_df(sf_hour_combined_df)
+```
+
+## Marin County AP Gnoss.Field
+
+### .wea file
+
+```{r}
+# .wea file
+marin_path_wea <- "USA_CA_Marin.County.AP-Gnoss.Field.720406_TMYx.2007-2021/USA_CA_Marin.County.AP-Gnoss.Field.720406_TMYx.2007-2021.wea"
+wea_data_marin <- read_wea(marin_path_wea)
+head(wea_data_marin)
+```
+
+### .pvsyst file
+
+```{r}
+marin_path_pvsyst <- "USA_CA_Marin.County.AP-Gnoss.Field.720406_TMYx.2007-2021/USA_CA_Marin.County.AP-Gnoss.Field.720406_TMYx.2007-2021.pvsyst"
+marin_pvsyst_data <- read_pvsyst(marin_path_pvsyst)
+head(marin_pvsyst_data)
+```
+
+### .stat file
+
+```{r}
+marin_statlines <- read_lines("USA_CA_Marin.County.AP-Gnoss.Field.720406_TMYx.2007-2021/USA_CA_Marin.County.AP-Gnoss.Field.720406_TMYx.2007-2021.stat", locale = locale(encoding = "ISO-8859-1"))
+```
+
+#### Monthly Statistics for Dry Bulb temperatures
+
+```{r}
+marin_stat_data_month_dry_bulb_temp <- read_stat("Monthly Statistics for Dry Bulb temperatures",marin_statlines)
+marin_stat_data_month_dry_bulb_temp_t <- transpose_dataframe(marin_stat_data_month_dry_bulb_temp)
+marin_stat_data_month_dry_bulb_temp_t <- my_convert_to_time(marin_stat_data_month_dry_bulb_temp_t)
+marin_stat_data_month_dry_bulb_temp_t <- df_to_numeric(marin_stat_data_month_dry_bulb_temp_t)
+head(marin_stat_data_month_dry_bulb_temp_t)
+```
+
+#### Monthly Statistics for Dew Point temperatures
+
+```{r}
+marin_stat_data_month_dew_point_temp <- read_stat("Monthly Statistics for Dew Point temperatures",marin_statlines)
+marin_stat_data_month_dew_point_temp_t <- transpose_dataframe(marin_stat_data_month_dew_point_temp)
+marin_stat_data_month_dew_point_temp_t <- my_convert_to_time(marin_stat_data_month_dew_point_temp_t)
+marin_stat_data_month_dew_point_temp_t <- df_to_numeric(marin_stat_data_month_dew_point_temp_t)
+head(marin_stat_data_month_dew_point_temp_t)
+```
+
+#### Average Hourly Statistics for Dry Bulb
+
+```{r}
+marin_stat_data_hour_dry_bulb_temp <- read_stat("Average Hourly Statistics for Dry Bulb temperatures",marin_statlines)
+marin_stat_data_hour_dry_bulb_temp <- first_row_to_colnames(marin_stat_data_hour_dry_bulb_temp)
+head(marin_stat_data_hour_dry_bulb_temp)
+```
+
+#### Average Hourly Statistics for Dew Point temperatures
+
+```{r}
+marin_stat_data_hour_dew_point_temp <- read_stat("Average Hourly Statistics for Dew Point temperatures",marin_statlines)
+marin_stat_data_hour_dew_point_temp <- first_row_to_colnames(marin_stat_data_hour_dew_point_temp)
+head(marin_stat_data_hour_dew_point_temp)
+```
+
+#### Average Hourly Relative Humidity
+
+```{r}
+marin_stat_data_hour_relative_humid <- read_stat("Average Hourly Relative Humidity",marin_statlines)
+marin_stat_data_hour_relative_humid <- first_row_to_colnames(marin_stat_data_hour_relative_humid)
+head(marin_stat_data_hour_relative_humid)
+```
+
+#### Monthly Wind Direction
+
+```{r}
+marin_stat_data_month_wind_direction <- read_stat("Monthly Wind Direction",marin_statlines)
+marin_stat_data_month_wind_direction_t <- transpose_dataframe(marin_stat_data_month_wind_direction)
+marin_stat_data_month_wind_direction_t <- df_to_numeric(marin_stat_data_month_wind_direction_t)
+head(marin_stat_data_month_wind_direction_t)
+```
+
+#### Average Hourly Statistics for Direct Normal Solar Radiation
+
+```{r}
+marin_stat_data_hour_dircect_NSR <- read_stat("Average Hourly Statistics for Direct Normal Solar Radiation",marin_statlines)
+marin_stat_data_hour_dircect_NSR <- first_row_to_colnames(marin_stat_data_hour_dircect_NSR)
+head(marin_stat_data_hour_dircect_NSR)
+```
+
+#### Monthly Statistics for Wind Speed
+
+```{r}
+marin_stat_data_month_wind_speed <- read_stat("Monthly Statistics for Wind Speed",marin_statlines)
+marin_stat_data_month_wind_speed_t <- transpose_dataframe(marin_stat_data_month_wind_speed)
+marin_stat_data_month_wind_speed_t <- my_convert_to_time(marin_stat_data_month_wind_speed_t)
+marin_stat_data_month_wind_speed_t <- df_to_numeric(marin_stat_data_month_wind_speed_t)
+head(marin_stat_data_month_wind_speed_t)
+```
+
+#### Average Hourly Statistics for Wind Speed
+
+```{r}
+marin_stat_data_hour_wind_speed <- read_stat("Average Hourly Relative Humidity",marin_statlines)
+marin_stat_data_hour_wind_speed <- first_row_to_colnames(marin_stat_data_hour_wind_speed)
+head(marin_stat_data_hour_wind_speed)
+```
+
+### Combine Hourly and Plot
+
+```{r}
+# Combine
+marin_stat_data_hour_dry_bulb_temp_3_cols <- hourly_3_cols(marin_stat_data_hour_dry_bulb_temp)
+head(marin_stat_data_hour_dry_bulb_temp_3_cols)
+
+
+marin_stat_data_hour_dew_point_temp_3_cols <- hourly_3_cols(marin_stat_data_hour_dew_point_temp)
+head(marin_stat_data_hour_dew_point_temp_3_cols)
+
+
+marin_stat_data_hour_relative_humid_3_cols <- hourly_3_cols(marin_stat_data_hour_relative_humid)
+head(marin_stat_data_hour_relative_humid_3_cols)
+
+
+marin_stat_data_hour_dircect_NSR_3_cols <- hourly_3_cols(marin_stat_data_hour_relative_humid)
+head(marin_stat_data_hour_dircect_NSR_3_cols)
+
+marin_stat_data_hour_wind_speed_3_col <- hourly_3_cols(marin_stat_data_hour_wind_speed)
+head(marin_stat_data_hour_wind_speed_3_col)
+
+marin_hour_combined_df <- combine_hour(marin_stat_data_hour_dry_bulb_temp_3_cols,marin_stat_data_hour_dew_point_temp_3_cols,marin_stat_data_hour_relative_humid_3_cols,marin_stat_data_hour_dircect_NSR_3_cols,marin_stat_data_hour_wind_speed_3_col)
+head(marin_hour_combined_df)
+
+
+#Plot
+plot_hourly_df(marin_hour_combined_df)
+```
+
+## Napa County AP Gnoss.Field
+
+### .wea file
+
+```{r}
+# .wea file
+napa_path_wea <- "USA_CA_Napa.County.AP.724955_TMYx.2007-2021/USA_CA_Napa.County.AP.724955_TMYx.2007-2021.wea"
+napa_data_wea <- read_wea(napa_path_wea)
+head(napa_data_wea)
+```
+
+### .pvsyst file
+
+```{r}
+napa_path_pvsyst <- "USA_CA_Napa.County.AP.724955_TMYx.2007-2021/USA_CA_Napa.County.AP.724955_TMYx.2007-2021.pvsyst"
+napa_pvsyst_data <- read_pvsyst(napa_path_pvsyst)
+head(napa_pvsyst_data)
+```
+
+### .stat file
+
+```{r}
+napa_statlines <- read_lines("USA_CA_Napa.County.AP.724955_TMYx.2007-2021/USA_CA_Napa.County.AP.724955_TMYx.2007-2021.stat", locale = locale(encoding = "ISO-8859-1"))
+```
+
+#### Monthly Statistics for Dry Bulb temperatures
+
+```{r}
+napa_stat_data_month_dry_bulb_temp <- read_stat("Monthly Statistics for Dry Bulb temperatures",napa_statlines)
+napa_stat_data_month_dry_bulb_temp_t <- transpose_dataframe(napa_stat_data_month_dry_bulb_temp)
+napa_stat_data_month_dry_bulb_temp_t <- my_convert_to_time(napa_stat_data_month_dry_bulb_temp_t)
+napa_stat_data_month_dry_bulb_temp_t <- df_to_numeric(napa_stat_data_month_dry_bulb_temp_t)
+head(napa_stat_data_month_dry_bulb_temp_t)
+```
+
+#### Monthly Statistics for Dew Point temperatures
+
+```{r}
+napa_stat_data_month_dew_point_temp <- read_stat("Monthly Statistics for Dew Point temperatures",napa_statlines)
+napa_stat_data_month_dew_point_temp_t <- transpose_dataframe(napa_stat_data_month_dew_point_temp)
+napa_stat_data_month_dew_point_temp_t <- my_convert_to_time(napa_stat_data_month_dew_point_temp_t)
+napa_stat_data_month_dew_point_temp_t <- df_to_numeric(napa_stat_data_month_dew_point_temp_t)
+head(napa_stat_data_month_dew_point_temp_t)
+```
+
+#### Average Hourly Statistics for Dry Bulb
+
+```{r}
+napa_stat_data_hour_dry_bulb_temp <- read_stat("Average Hourly Statistics for Dry Bulb temperatures",napa_statlines)
+napa_stat_data_hour_dry_bulb_temp <- first_row_to_colnames(napa_stat_data_hour_dry_bulb_temp)
+head(napa_stat_data_hour_dry_bulb_temp)
+```
+
+#### Average Hourly Statistics for Dew Point temperatures
+
+```{r}
+napa_stat_data_hour_dew_point_temp <- read_stat("Average Hourly Statistics for Dew Point temperatures",napa_statlines)
+napa_stat_data_hour_dew_point_temp <- first_row_to_colnames(napa_stat_data_hour_dew_point_temp)
+head(napa_stat_data_hour_dew_point_temp)
+```
+
+#### Average Hourly Relative Humidity
+
+```{r}
+napa_stat_data_hour_relative_humid <- read_stat("Average Hourly Relative Humidity",napa_statlines)
+napa_stat_data_hour_relative_humid <- first_row_to_colnames(napa_stat_data_hour_relative_humid)
+head(napa_stat_data_hour_relative_humid)
+```
+
+#### Monthly Wind Direction
+
+```{r}
+napa_stat_data_month_wind_direction <- read_stat("Monthly Wind Direction",napa_statlines)
+napa_stat_data_month_wind_direction_t <- transpose_dataframe(napa_stat_data_month_wind_direction)
+napa_stat_data_month_wind_direction_t <- df_to_numeric(napa_stat_data_month_wind_direction_t)
+head(napa_stat_data_month_wind_direction_t)
+```
+
+#### Average Hourly Statistics for Direct Normal Solar Radiation
+
+```{r}
+napa_stat_data_hour_dircect_NSR <- read_stat("Average Hourly Statistics for Direct Normal Solar Radiation",napa_statlines)
+napa_stat_data_hour_dircect_NSR <- first_row_to_colnames(napa_stat_data_hour_dircect_NSR)
+head(napa_stat_data_hour_dircect_NSR)
+```
+
+#### Monthly Statistics for Wind Speed
+
+```{r}
+napa_stat_data_month_wind_speed <- read_stat("Monthly Statistics for Wind Speed",napa_statlines)
+napa_stat_data_month_wind_speed_t <- transpose_dataframe(napa_stat_data_month_wind_speed)
+napa_stat_data_month_wind_speed_t <- my_convert_to_time(napa_stat_data_month_wind_speed_t)
+napa_stat_data_month_wind_speed_t <- df_to_numeric(napa_stat_data_month_wind_speed_t)
+head(napa_stat_data_month_wind_speed_t)
+```
+
+#### Average Hourly Statistics for Wind Speed
+
+```{r}
+napa_stat_data_hour_wind_speed <- read_stat("Average Hourly Relative Humidity",napa_statlines)
+napa_stat_data_hour_wind_speed <- first_row_to_colnames(napa_stat_data_hour_wind_speed)
+head(napa_stat_data_hour_wind_speed)
+```
+
+### Combine Hourly and Plot
+
+```{r}
+# Combine
+napa_stat_data_hour_dry_bulb_temp_3_cols <- hourly_3_cols(napa_stat_data_hour_dry_bulb_temp)
+head(napa_stat_data_hour_dry_bulb_temp_3_cols)
+
+
+napa_stat_data_hour_dew_point_temp_3_cols <- hourly_3_cols(napa_stat_data_hour_dew_point_temp)
+head(napa_stat_data_hour_dew_point_temp_3_cols)
+
+
+napa_stat_data_hour_relative_humid_3_cols <- hourly_3_cols(napa_stat_data_hour_relative_humid)
+head(napa_stat_data_hour_relative_humid_3_cols)
+
+
+napa_stat_data_hour_dircect_NSR_3_cols <- hourly_3_cols(napa_stat_data_hour_relative_humid)
+head(napa_stat_data_hour_dircect_NSR_3_cols)
+
+napa_stat_data_hour_wind_speed_3_col <- hourly_3_cols(napa_stat_data_hour_wind_speed)
+head(napa_stat_data_hour_wind_speed_3_col)
+
+napa_hour_combined_df <- combine_hour(napa_stat_data_hour_dry_bulb_temp_3_cols,napa_stat_data_hour_dew_point_temp_3_cols,napa_stat_data_hour_relative_humid_3_cols,napa_stat_data_hour_dircect_NSR_3_cols,napa_stat_data_hour_wind_speed_3_col)
+head(napa_hour_combined_df)
+
+
+#Plot
+plot_hourly_df(napa_hour_combined_df)
+```
+
+## Point Reyes Lighthouse
+
+### .wea file
+
+```{r}
+# .wea file
+point_path_wea <- "USA_CA_Point.Reyes.Lighthouse.724959_TMYx.2007-2021/USA_CA_Point.Reyes.Lighthouse.724959_TMYx.2007-2021.wea"
+point_data_wea <- read_wea(point_path_wea)
+head(point_data_wea)
+```
+
+### .pvsyst file
+
+```{r}
+point_path_pvsyst <- "USA_CA_Point.Reyes.Lighthouse.724959_TMYx.2007-2021/USA_CA_Point.Reyes.Lighthouse.724959_TMYx.2007-2021.pvsyst"
+point_pvsyst_data <- read_pvsyst(point_path_pvsyst)
+head(point_pvsyst_data)
+```
+
+### .stat file
+
+```{r}
+point_statlines <- read_lines("USA_CA_Point.Reyes.Lighthouse.724959_TMYx.2007-2021/USA_CA_Point.Reyes.Lighthouse.724959_TMYx.2007-2021.stat", locale = locale(encoding = "ISO-8859-1"))
+```
+
+#### Monthly Statistics for Dry Bulb temperatures
+
+```{r}
+point_stat_data_month_dry_bulb_temp <- read_stat("Monthly Statistics for Dry Bulb temperatures",point_statlines)
+point_stat_data_month_dry_bulb_temp_t <- transpose_dataframe(point_stat_data_month_dry_bulb_temp)
+point_stat_data_month_dry_bulb_temp_t <- my_convert_to_time(point_stat_data_month_dry_bulb_temp_t)
+point_stat_data_month_dry_bulb_temp_t <- df_to_numeric(point_stat_data_month_dry_bulb_temp_t)
+head(point_stat_data_month_dry_bulb_temp_t)
+```
+
+#### Monthly Statistics for Dew Point temperatures
+
+```{r}
+point_stat_data_month_dew_bulb_temp <- read_stat("Monthly Statistics for Dew Point temperatures",point_statlines)
+point_stat_data_month_dew_bulb_temp_t <- transpose_dataframe(point_stat_data_month_dew_bulb_temp)
+point_stat_data_month_dew_bulb_temp_t <- my_convert_to_time(point_stat_data_month_dew_bulb_temp_t)
+point_stat_data_month_dew_bulb_temp_t <- df_to_numeric(point_stat_data_month_dew_bulb_temp_t)
+head(point_stat_data_month_dew_bulb_temp_t)
+```
+
+#### Average Hourly Statistics for Dry Bulb
+
+```{r}
+point_stat_data_hour_dry_bulb_temp <- read_stat("Average Hourly Statistics for Dry Bulb temperatures",point_statlines)
+point_stat_data_hour_dry_bulb_temp <- first_row_to_colnames(point_stat_data_hour_dry_bulb_temp)
+head(point_stat_data_hour_dry_bulb_temp)
+```
+
+#### Average Hourly Statistics for Dew Point temperatures
+
+```{r}
+point_stat_data_hour_dew_point_temp <- read_stat("Average Hourly Statistics for Dew Point temperatures",point_statlines)
+point_stat_data_hour_dew_point_temp <- first_row_to_colnames(point_stat_data_hour_dew_point_temp)
+head(point_stat_data_hour_dew_point_temp)
+```
+
+#### Average Hourly Relative Humidity
+
+```{r}
+point_stat_data_hour_relative_humid <- read_stat("Average Hourly Relative Humidity",point_statlines)
+point_stat_data_hour_relative_humid <- first_row_to_colnames(point_stat_data_hour_relative_humid)
+head(point_stat_data_hour_relative_humid)
+```
+
+#### Monthly Wind Direction
+
+```{r}
+point_stat_data_month_wind_direction <- read_stat("Monthly Wind Direction",point_statlines)
+point_stat_data_month_wind_direction_t <- transpose_dataframe(point_stat_data_month_wind_direction)
+point_stat_data_month_wind_direction_t <- df_to_numeric(point_stat_data_month_wind_direction_t)
+head(point_stat_data_month_wind_direction_t)
+```
+
+#### Average Hourly Statistics for Direct Normal Solar Radiation
+
+```{r}
+point_stat_data_hour_dircect_NSR <- read_stat("Average Hourly Statistics for Direct Normal Solar Radiation",point_statlines)
+point_stat_data_hour_dircect_NSR <- first_row_to_colnames(point_stat_data_hour_dircect_NSR)
+head(point_stat_data_hour_dircect_NSR)
+```
+
+#### Monthly Statistics for Wind Speed
+
+```{r}
+point_stat_data_month_wind_speed <- read_stat("Monthly Statistics for Wind Speed",point_statlines)
+#point_statlines[grep("Monthly Statistics for Wind Speed", point_statlines):length(point_statlines)]
+point_stat_data_month_wind_speed_t <- transpose_dataframe(point_stat_data_month_wind_speed)
+point_stat_data_month_wind_speed_t <- my_convert_to_time(point_stat_data_month_wind_speed_t)
+point_stat_data_month_wind_speed_t <- df_to_numeric(point_stat_data_month_wind_speed_t)
+head(point_stat_data_month_wind_speed_t)
+```
+
+#### Average Hourly Statistics for Wind Speed
+
+```{r}
+point_stat_data_hour_wind_speed <- read_stat("Average Hourly Relative Humidity",point_statlines)
+point_stat_data_hour_wind_speed <- first_row_to_colnames(point_stat_data_hour_wind_speed)
+head(point_stat_data_hour_wind_speed)
+```
+
+### Combine Hourly and Plot
+
+```{r}
+# Combine
+point_stat_data_hour_dry_bulb_temp_3_cols <- hourly_3_cols(point_stat_data_hour_dry_bulb_temp)
+head(point_stat_data_hour_dry_bulb_temp_3_cols)
+
+
+point_stat_data_hour_dew_point_temp_3_cols <- hourly_3_cols(point_stat_data_hour_dew_point_temp)
+head(point_stat_data_hour_dew_point_temp_3_cols)
+
+
+point_stat_data_hour_relative_humid_3_cols <- hourly_3_cols(point_stat_data_hour_relative_humid)
+head(point_stat_data_hour_relative_humid_3_cols)
+
+
+point_stat_data_hour_dircect_NSR_3_cols <- hourly_3_cols(point_stat_data_hour_relative_humid)
+head(point_stat_data_hour_dircect_NSR_3_cols)
+
+point_stat_data_hour_wind_speed_3_col <- hourly_3_cols(point_stat_data_hour_wind_speed)
+head(point_stat_data_hour_wind_speed_3_col)
+
+point_hour_combined_df <- combine_hour(point_stat_data_hour_dry_bulb_temp_3_cols,point_stat_data_hour_dew_point_temp_3_cols,point_stat_data_hour_relative_humid_3_cols,point_stat_data_hour_dircect_NSR_3_cols,point_stat_data_hour_wind_speed_3_col)
+head(point_hour_combined_df)
+
+
+#Plot
+plot_hourly_df(point_hour_combined_df)
+```
+
+## UC Davis University
+
+### .wea file
+
+```{r}
+# .wea file
+ucdavis_path_wea <- "USA_CA_UC-Davis-University.AP.720576_TMYx.2007-2021/USA_CA_UC-Davis-University.AP.720576_TMYx.2007-2021.wea"
+ucdavis_data_wea <- read_wea(ucdavis_path_wea)
+head(ucdavis_data_wea)
+```
+
+### .pvsyst file
+
+```{r}
+ucdavis_path_pvsyst <- "USA_CA_UC-Davis-University.AP.720576_TMYx.2007-2021/USA_CA_UC-Davis-University.AP.720576_TMYx.2007-2021.pvsyst"
+ucdavis_pvsyst_data <- read_pvsyst(ucdavis_path_pvsyst)
+head(ucdavis_pvsyst_data)
+```
+
+### .stat file
+
+```{r}
+ucdavis_statlines <- read_lines("USA_CA_UC-Davis-University.AP.720576_TMYx.2007-2021/USA_CA_UC-Davis-University.AP.720576_TMYx.2007-2021.stat", locale = locale(encoding = "ISO-8859-1"))
+```
+
+#### Monthly Statistics for Dry Bulb temperatures
+
+```{r}
+ucdavis_stat_data_month_dry_bulb_temp <- read_stat("Monthly Statistics for Dry Bulb temperatures",ucdavis_statlines)
+ucdavis_stat_data_month_dry_bulb_temp_t <- transpose_dataframe(ucdavis_stat_data_month_dry_bulb_temp)
+ucdavis_stat_data_month_dry_bulb_temp_t <- my_convert_to_time(ucdavis_stat_data_month_dry_bulb_temp_t)
+ucdavis_stat_data_month_dry_bulb_temp_t <- df_to_numeric(ucdavis_stat_data_month_dry_bulb_temp_t)
+head(ucdavis_stat_data_month_dry_bulb_temp_t)
+```
+
+#### Monthly Statistics for Dew Point temperatures
+
+```{r}
+ucdavis_stat_data_month_dew_point_temp <- read_stat("Monthly Statistics for Dew Point temperatures",ucdavis_statlines)
+ucdavis_stat_data_month_dew_point_temp_t <- transpose_dataframe(ucdavis_stat_data_month_dew_point_temp)
+ucdavis_stat_data_month_dew_point_temp_t <- my_convert_to_time(ucdavis_stat_data_month_dew_point_temp_t)
+ucdavis_stat_data_month_dew_point_temp_t <- df_to_numeric(ucdavis_stat_data_month_dew_point_temp_t)
+head(ucdavis_stat_data_month_dew_point_temp_t)
+```
+
+#### Average Hourly Statistics for Dry Bulb
+
+```{r}
+ucdavis_stat_data_hour_dry_bulb_temp <- read_stat("Average Hourly Statistics for Dry Bulb temperatures",ucdavis_statlines)
+ucdavis_stat_data_hour_dry_bulb_temp <- first_row_to_colnames(ucdavis_stat_data_hour_dry_bulb_temp)
+head(ucdavis_stat_data_hour_dry_bulb_temp)
+```
+
+#### Average Hourly Statistics for Dew Point temperatures
+
+```{r}
+ucdavis_stat_data_hour_dew_point_temp <- read_stat("Average Hourly Statistics for Dew Point temperatures",ucdavis_statlines)
+ucdavis_stat_data_hour_dew_point_temp <- first_row_to_colnames(ucdavis_stat_data_hour_dew_point_temp)
+head(ucdavis_stat_data_hour_dew_point_temp)
+```
+
+#### Average Hourly Relative Humidity
+
+```{r}
+ucdavis_stat_data_hour_relative_humid <- read_stat("Average Hourly Relative Humidity",ucdavis_statlines)
+ucdavis_stat_data_hour_relative_humid <- first_row_to_colnames(ucdavis_stat_data_hour_relative_humid)
+head(ucdavis_stat_data_hour_relative_humid)
+```
+
+#### Monthly Wind Direction
+
+```{r}
+ucdavis_stat_data_month_wind_direction <- read_stat("Monthly Wind Direction",ucdavis_statlines)
+ucdavis_stat_data_month_wind_direction_t <- transpose_dataframe(ucdavis_stat_data_month_wind_direction)
+ucdavis_stat_data_month_wind_direction_t <- df_to_numeric(ucdavis_stat_data_month_wind_direction_t)
+head(ucdavis_stat_data_month_wind_direction_t)
+```
+
+#### Average Hourly Statistics for Direct Normal Solar Radiation
+
+```{r}
+ucdavis_stat_data_hour_dircect_NSR <- read_stat("Average Hourly Statistics for Direct Normal Solar Radiation",ucdavis_statlines)
+ucdavis_stat_data_hour_dircect_NSR <- first_row_to_colnames(ucdavis_stat_data_hour_dircect_NSR)
+head(ucdavis_stat_data_hour_dircect_NSR)
+```
+
+#### Monthly Statistics for Wind Speed
+
+```{r}
+ucdavis_stat_data_month_wind_speed <- read_stat("Monthly Statistics for Wind Speed",ucdavis_statlines)
+ucdavis_stat_data_month_wind_speed_t <- transpose_dataframe(ucdavis_stat_data_month_wind_speed)
+ucdavis_stat_data_month_wind_speed_t <- my_convert_to_time(ucdavis_stat_data_month_wind_speed_t)
+ucdavis_stat_data_month_wind_speed_t <- df_to_numeric(ucdavis_stat_data_month_wind_speed_t)
+head(ucdavis_stat_data_month_wind_speed_t)
+```
+
+#### Average Hourly Statistics for Wind Speed
+
+```{r}
+ucdavis_stat_data_hour_wind_speed <- read_stat("Average Hourly Relative Humidity",ucdavis_statlines)
+ucdavis_stat_data_hour_wind_speed <- first_row_to_colnames(ucdavis_stat_data_hour_wind_speed)
+head(ucdavis_stat_data_hour_wind_speed)
+```
+
+### Combine Hourly and Plot
+
+```{r}
+# Combine
+ucdavis_stat_data_hour_dry_bulb_temp_3_cols <- hourly_3_cols(ucdavis_stat_data_hour_dry_bulb_temp)
+head(ucdavis_stat_data_hour_dry_bulb_temp_3_cols)
+
+
+ucdavis_stat_data_hour_dew_point_temp_3_cols <- hourly_3_cols(ucdavis_stat_data_hour_dew_point_temp)
+head(ucdavis_stat_data_hour_dew_point_temp_3_cols)
+
+
+ucdavis_stat_data_hour_relative_humid_3_cols <- hourly_3_cols(ucdavis_stat_data_hour_relative_humid)
+head(ucdavis_stat_data_hour_relative_humid_3_cols)
+
+
+ucdavis_stat_data_hour_dircect_NSR_3_cols <- hourly_3_cols(ucdavis_stat_data_hour_relative_humid)
+head(ucdavis_stat_data_hour_dircect_NSR_3_cols)
+
+ucdavis_stat_data_hour_wind_speed_3_col <- hourly_3_cols(ucdavis_stat_data_hour_wind_speed)
+head(ucdavis_stat_data_hour_wind_speed_3_col)
+
+ucdavis_hour_combined_df <- combine_hour(ucdavis_stat_data_hour_dry_bulb_temp_3_cols,ucdavis_stat_data_hour_dew_point_temp_3_cols,ucdavis_stat_data_hour_relative_humid_3_cols,ucdavis_stat_data_hour_dircect_NSR_3_cols,ucdavis_stat_data_hour_wind_speed_3_col)
+head(ucdavis_hour_combined_df)
+
+
+#Plot
+plot_hourly_df(ucdavis_hour_combined_df)
+```
+
+# Verification
+
+## Monthly Data
+
+Below is a test conducted by randomly selecting dataframs, and using the function below to print their min and max, in order to check the consistency between lines and df. During the test, I found out the min for monthly wind speed contains lots of 0s, at first I suspect its corectness, then I went back to each df initialization, and found out that it's normal to have wind speed as 0.
+
+```{r}
+
+my_which_min_max <- function(tdata){
+  if(!"Maximum " %in% colnames(tdata) | !"Minimum " %in% colnames(tdata)){
+    warning("Unfitted data!")
+    stop("No maximum or minimum col in the df!")
+    return(tdata)
+  }
+  print(tdata[which(tdata$`Maximum ` == max(tdata$`Maximum `))[1],])
+  print(tdata[which(tdata$`Minimum ` == min(tdata$`Minimum `))[1],])
+}
+
+
+
+statlines <- c(sf_statlines, marin_statlines, napa_statlines, point_statlines, ucdavis_statlines)
+statlines[grep("Maximum Dry Bulb temperature", statlines)]
+statlines[grep("Minimum Dry Bulb temperature", statlines)]
+statlines[grep("Maximum Wind Speed", statlines)]
+statlines[grep("Minimum Wind Speed", statlines)]
+my_which_min_max(sf_stat_data_month_dry_bulb_temp_t)
+my_which_min_max(sf_stat_data_month_dew_point_temp_t)
+my_which_min_max(sf_stat_data_month_wind_speed_t)
+my_which_min_max(point_stat_data_month_wind_speed_t)
+point_stat_data_month_wind_speed_t
+```
+
+## Hourly Data
+
+By constructing plots, and it's a easy way to ensure dfs' correctness by comparing and looking up the consistency among their ranges, patterns, x-, and y- arises.
+
+# Assumption and Conclusion
+
+My workflow for this project can be divided into the following steps:\
+
+1.  Focus on the first zip file to look for the pattern within it.
+    -   Read wea and pvsyst file since their simplicity.
+
+        -   Assuming each wea and pvsyst has same skip lines. Turns out they do.
+
+    -   Read Stat file
+
+        -   Resolved Difficulty:
+
+            -   Encoding issue solved by explicitly claim that locale = locale(encoding = "ISO-8859-1")
+
+            -   Choosing the end pattern: changing "[C]" to "-" since the pattern is that each information is fully displayed right after the next "-"
+
+            -   Convert the column Day:Hour into time variables using the combination of paste0 and as.POSIXct. And it's important to match the final string with the format.
+
+            -   In my convert to numeric function, it's important to convert only char into double instead of posixct, otherwise the posixct elements will end up with wrong values.
+2.  Apply functions to the rest files
+    -   When applying functions, I notice that it's worthy to add a if condition that recognizes the input value is the one we want to manipulate. Otherwise it will potentially change the data.
+
+    -   I assign distinct variables name to each df instead of overwriting them since I think it's easy to debug and double check. For example, if one dataframe is wrong, I can locate it fast and easily.
+
+    -   But assigning the variables names can be overwhelming, so I just search them and replace the words partially.

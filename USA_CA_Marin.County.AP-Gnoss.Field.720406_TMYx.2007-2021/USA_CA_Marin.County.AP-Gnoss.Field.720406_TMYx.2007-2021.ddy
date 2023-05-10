@@ -1,0 +1,2343 @@
+ ! The following Location and Design Day data are produced as possible from the indicated data source.
+ ! Wind Speeds follow the indicated design conditions rather than traditional values (6.7 m/s heating, 3.35 m/s cooling)
+ ! No special attempts at re-creating or determining missing data parts (e.g. Wind speed or direction)
+ ! are done.  Therefore, you should look at the data and fill in any incorrect values as you desire.
+ 
+ ! SizingPeriod:DesignDay and other objects are formatted to meet criteria of EnergyPlus V7.1 and later
+ 
+ ! Some users have indicated that they would like the actual day of week from the weather file to be
+ ! used as the start day of week for a RunPeriod even though this is relatively meaningless for
+ ! TMY data files as future months will not use their start days of week (simulations need to show
+ ! continuity in day of week presentation).
+ 
+ ! In an effort to accomodate, the following initial month days are included:
+ ! Note JAN 1, 2021 is a Friday
+ ! Note FEB 1, 2012 is a Wednesday
+ ! Note MAR 1, 2010 is a Monday
+ ! Note APR 1, 2014 is a Tuesday
+ ! Note MAY 1, 2017 is a Monday
+ ! Note JUN 1, 2016 is a Wednesday
+ ! Note JUL 1, 2011 is a Friday
+ ! Note AUG 1, 2016 is a Monday
+ ! Note SEP 1, 2011 is a Thursday
+ ! Note OCT 1, 2018 is a Monday
+ ! Note NOV 1, 2013 is a Friday
+ ! Note DEC 1, 2016 is a Thursday
+ 
+ ! Since the RunPeriod object changes in V9.0, the following are RunPeriod objects in comments:
+ ! Version before EnergyPlus release V9.0
+ !RunPeriod,
+ !Weather Data,    !- Name
+ !  1,             !- Begin Month
+ !  1,             !- Begin Day of Month
+ !  12,            !- End Month
+ !  31,            !- End Day of Month
+ !Friday,      !- Day of Week for Start Day
+ !  No,            !- Use Weather File Holidays and Special Days
+ !  No,            !- Use Weather File Daylight Saving Period
+ ! Yes,            !- Apply Weekend Holiday Rule
+ ! Yes,            !- Use Weather File Rain Indicators
+ ! Yes;            !- Use Weather File Snow Indicators
+ 
+ ! Version EnergyPlus release V9.0+
+ !RunPeriod,
+ !Weather Data,    !- Name
+ !  1,             !- Begin Month
+ !  1,             !- Begin Day of Month
+ !   ,             !- Begin Year
+ !  12,            !- End Month
+ !  31,            !- End Day of Month
+ !   ,             !- End Year
+ !Friday,      !- Day of Week for Start Day
+ !  No,            !- Use Weather File Holidays and Special Days
+ !  No,            !- Use Weather File Daylight Saving Period
+ ! Yes,            !- Apply Weekend Holiday Rule
+ ! Yes,            !- Use Weather File Rain Indicators
+ ! Yes,            !- Use Weather File Snow Indicators
+ ! ;               !- Treat Weather as Actual
+ 
+ Site:Location,
+  Marin.County.AP-Gnoss.Field_CA_USA Design_Conditions,     !- Location Name
+      38.15,     !- Latitude {N+ S-}
+    -122.55,     !- Longitude {W- E+}
+      -8.00,     !- Time Zone Relative to GMT {GMT+/-}
+       0.60;     !- Elevation {m}
+  
+ ! The following Sizing Period objects for Extreme and Typical conditions are calculated
+ ! from the extreme (if any) and typical conditions on the weather source data.
+ ! The actual weeks that will be used will exist on the weather file.
+  
+ SizingPeriod:WeatherFileConditionType,
+   Summer Extreme,
+   SummerExtreme,
+   SummerDesignDay,
+   Yes,                !- Use Weather File Daylight Saving Period
+   Yes;                !- Use Weather File Rain and Snow Indicators
+ SizingPeriod:WeatherFileConditionType,
+   Summer Typical,
+   SummerTypical,
+   Monday,
+   Yes,                !- Use Weather File Daylight Saving Period
+   Yes;                !- Use Weather File Rain and Snow Indicators
+ SizingPeriod:WeatherFileConditionType,
+   Winter Extreme,
+   WinterExtreme,
+   WinterDesignDay,
+   Yes,                !- Use Weather File Daylight Saving Period
+   Yes;                !- Use Weather File Rain and Snow Indicators
+ SizingPeriod:WeatherFileConditionType,
+   Winter Typical,
+   WinterTypical,
+   Monday,
+   Yes,                !- Use Weather File Daylight Saving Period
+   Yes;                !- Use Weather File Rain and Snow Indicators
+ SizingPeriod:WeatherFileConditionType,
+   Autumn Typical,
+   AutumnTypical,
+   Monday,
+   Yes,                !- Use Weather File Daylight Saving Period
+   Yes;                !- Use Weather File Rain and Snow Indicators
+ SizingPeriod:WeatherFileConditionType,
+   Spring Typical,
+   SpringTypical,
+   Monday,
+   Yes,                !- Use Weather File Daylight Saving Period
+   Yes;                !- Use Weather File Rain and Snow Indicators
+ 
+
+
+ ! Site:Precipitation. RoofIrrigation and Schedule:File objects for rainfall
+ ! Data is built from rainfall data on the source data
+  Site:Precipitation,  
+    ScheduleAndDesignLevel,  !- Precipitation Model Type
+    0.346,  !- Design Level for Total Annual Precipitation
+    Rainfall Data from EPW file,    !- Precipitation Rates Schedule Name
+    0.346;  !- Average Total Annual Precipitation
+ 
+  RoofIrrigation,  
+    Schedule,  !- Irridation Model Type
+    Rainfall Data from EPW file,    !- Precipitation Rates Schedule Name
+    ;  !- Irrigation Maximum Saturation Threshold (default used)
+ 
+  Schedule:File, 
+    Rainfall Data from EPW file,  !- Name
+    ,                       !- Schedule Type Limits Name
+    USA_CA_Marin.County.AP-Gnoss.Field.720406_TMYx.2007-2021.rain,    !- File Name
+    1,                       !- Column Number
+    1,                       !- Rows to Skip at Top
+    8760;    !- Number of Hours of Data
+ 
+ !  WMO=720406 Time Zone= GMT-8.00 Code=NAP: (GMT-08:00 North America / Pacific)
+ !  Data Source="2021 ASHRAE Handbook -- Fundamentals - Chapter 14 Climatic Design Information"
+
+ RunPeriodControl:DaylightSavingTime,
+   2nd Sunday in March,    !- StartDate
+   1st Sunday in November;    !- EndDate
+ 
+ ! ======================= Annual Design Conditions SizingPeriod:DesignDay ======================
+ ! The following annual design conditions are reproduced from the climate data shown above.
+ ! Heating - 99%, 99.6%; Cooling - .4%, 1%, 2% for several humidity, etc conditions
+ !
+ ! Marin.County.AP-Gnoss.Field_CA_USA Extreme Annual Wind Speeds, 1%=8.6m/s, 2.5%=7.6m/s, 5%=6.8m/s
+ ! Marin.County.AP-Gnoss.Field_CA_USA Extreme Annual Temperatures, Max Drybulb=38.6C Min Drybulb=1.4C
+  
+ ! Marin.County.AP-Gnoss.Field_CA_USA ASHRAE Climate Zone=3C
+  
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Heating Design Conditions Wind Speed=0.5m/s Wind Dir=190
+ ! Coldest Month=DEC
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Heating 99.6%, MaxDB=-0.3C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Htg 99.6% Condns DB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  WinterDesignDay,!- Day Type
+       -0.3,      !- Maximum Dry-Bulb Temperature {C}
+        0.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       -0.3,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        0.5,      !- Wind Speed {m/s} design conditions vs. traditional 6.71 m/s (15 mph)
+        190,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+  ASHRAEClearSky, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+           ,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+           ,      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+       0.00;      !- Clearness {0.0 to 1.1}
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Heating 99%, MaxDB=0.2C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Htg 99% Condns DB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  WinterDesignDay,!- Day Type
+        0.2,      !- Maximum Dry-Bulb Temperature {C}
+        0.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+        0.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        0.5,      !- Wind Speed {m/s} design conditions vs. traditional 6.71 m/s (15 mph)
+        190,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+  ASHRAEClearSky, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+           ,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+           ,      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+       0.00;      !- Clearness {0.0 to 1.1}
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Humidification 99.6% Design Conditions DP=>MCDB, DP=-7.2C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Hum_n 99.6% Condns DP=>MCDB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  WinterDesignDay,!- Day Type
+       14.5,      !- Maximum Dry-Bulb Temperature {C}
+        0.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Dewpoint,     !- Humidity Condition Type
+       -7.2,      !- Dewpoint at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        0.5,      !- Wind Speed {m/s} design conditions vs. traditional 6.71 m/s (15 mph)
+        190,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+  ASHRAEClearSky, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+           ,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+           ,      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+       0.00;      !- Clearness {0.0 to 1.1}
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Humidification 99% Design Conditions DP=>MCDB, DP=-3.9C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Hum_n 99% Condns DP=>MCDB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  WinterDesignDay,!- Day Type
+       10.8,      !- Maximum Dry-Bulb Temperature {C}
+        0.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Dewpoint,     !- Humidity Condition Type
+       -3.9,      !- Dewpoint at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        0.5,      !- Wind Speed {m/s} design conditions vs. traditional 6.71 m/s (15 mph)
+        190,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+  ASHRAEClearSky, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+           ,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+           ,      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+       0.00;      !- Clearness {0.0 to 1.1}
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Heating Wind 99.6% Design Conditions WS=>MCDB, WS=10.2m/s
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Htg Wind 99.6% Condns WS=>MCDB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  WinterDesignDay,!- Day Type
+       14.2,      !- Maximum Dry-Bulb Temperature {C}
+        0.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       14.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+       10.2,      !- Wind Speed {m/s} design conditions vs. traditional 6.71 m/s (15 mph)
+        190,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+  ASHRAEClearSky, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+           ,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+           ,      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+       0.00;      !- Clearness {0.0 to 1.1}
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Heating Wind 99% Design Conditions WS=>MCDB, WS=8.4m/s
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Htg Wind 99% Condns WS=>MCDB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  WinterDesignDay,!- Day Type
+       12.4,      !- Maximum Dry-Bulb Temperature {C}
+        0.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       12.4,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        8.4,      !- Wind Speed {m/s} design conditions vs. traditional 6.71 m/s (15 mph)
+        190,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+  ASHRAEClearSky, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+           ,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+           ,      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+       0.00;      !- Clearness {0.0 to 1.1}
+ 
+ ! Marin.County.AP-Gnoss.Field Annual Cooling Design Conditions Wind Speed=3.5m/s Wind Dir=120
+ ! Hottest Month=JUL
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (DB=>MWB) .4%, MaxDB=34.7C MWB=19.1C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg .4% Condns DB=>MWB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       34.7,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.1,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (DB=>MWB) 1%, MaxDB=32.5C MWB=18.8C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg 1% Condns DB=>MWB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       32.5,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.8,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (DB=>MWB) 2%, MaxDB=30.1C MWB=18.2C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg 2% Condns DB=>MWB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       30.1,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (WB=>MDB) .4%, MDB=31.4C WB=20.7C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg .4% Condns WB=>MDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       31.4,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       20.7,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (WB=>MDB) 1%, MDB=29.8C WB=19.9C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg 1% Condns WB=>MDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       29.8,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.9,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (WB=>MDB) 2%, MDB=28.4C WB=19.1C
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg 2% Condns WB=>MDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       28.4,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.1,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (DP=>MDB) .4%, MDB=22.7C DP=17.3C HR=0.0124
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg .4% Condns DP=>MDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       22.7,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Dewpoint,     !- Humidity Condition Type
+       17.3,      !- Dewpoint at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (DP=>MDB) 1%, MDB=22.7C DP=16.2C HR=0.0115
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg 1% Condns DP=>MDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       22.7,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Dewpoint,     !- Humidity Condition Type
+       16.2,      !- Dewpoint at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (DP=>MDB) 2%, MDB=21.4C DP=15.2C HR=0.0108
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg 2% Condns DP=>MDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       21.4,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Dewpoint,     !- Humidity Condition Type
+       15.2,      !- Dewpoint at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (Enthalpy=>MDB) .4%, MDB=31.6C Enthalpy=59400.0J/kg
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg .4% Condns Enth=>MDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       31.6,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+   Enthalpy,      !- Humidity Condition Type
+           ,      !- Wetbulb or Dewpoint at Maximum Dry-Bulb
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+    59400.0,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (Enthalpy=>MDB) 1%, MDB=29.8C Enthalpy=56600.0J/kg
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg 1% Condns Enth=>MDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       29.8,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+   Enthalpy,      !- Humidity Condition Type
+           ,      !- Wetbulb or Dewpoint at Maximum Dry-Bulb
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+    56600.0,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA Annual Cooling (Enthalpy=>MDB) 2%, MDB=28.5C Enthalpy=53800.0J/kg
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field Ann Clg 2% Condns Enth=>MDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       28.5,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+   Enthalpy,      !- Humidity Condition Type
+           ,      !- Wetbulb or Dewpoint at Maximum Dry-Bulb
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+    53800.0,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        3.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! ======================= Monthly Design Conditions SizingPeriod:DesignDay ======================
+ ! The following monthly design conditions are reproduced from the climate data shown above.
+ ! Each 12 months are shown for: 2% Drybulb, 2% Wetbulb, 5% Drybulb, .4% Drybulb, .4% Wetbulb
+ !
+ ! Marin.County.AP-Gnoss.Field_CA_USA January (DB=>MCWB) .4%, MaxDB=19.8C MWB=10.9C taub=0.320 taud=2.560
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field January .4% Condns DB=>MCWB,     !- Name
+          1,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       19.8,      !- Maximum Dry-Bulb Temperature {C}
+        9.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       10.9,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.320,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.560;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA February (DB=>MCWB) .4%, MaxDB=23.8C MWB=14.5C taub=0.324 taud=2.550
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field February .4% Condns DB=>MCWB,     !- Name
+          2,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       23.8,      !- Maximum Dry-Bulb Temperature {C}
+       10.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       14.5,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.324,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.550;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA March (DB=>MCWB) .4%, MaxDB=25.1C MWB=16.0C taub=0.334 taud=2.518
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field March .4% Condns DB=>MCWB,     !- Name
+          3,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       25.1,      !- Maximum Dry-Bulb Temperature {C}
+       11.2,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       16.0,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.334,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.518;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA April (DB=>MCWB) .4%, MaxDB=30.0C MWB=18.1C taub=0.354 taud=2.428
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field April .4% Condns DB=>MCWB,     !- Name
+          4,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       30.0,      !- Maximum Dry-Bulb Temperature {C}
+       12.4,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.1,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.8,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.354,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.428;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA May (DB=>MCWB) .4%, MaxDB=32.6C MWB=18.5C taub=0.359 taud=2.444
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field May .4% Condns DB=>MCWB,     !- Name
+          5,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       32.6,      !- Maximum Dry-Bulb Temperature {C}
+       13.4,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.5,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.359,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.444;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA June (DB=>MCWB) .4%, MaxDB=37.0C MWB=20.8C taub=0.355 taud=2.464
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field June .4% Condns DB=>MCWB,     !- Name
+          6,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       37.0,      !- Maximum Dry-Bulb Temperature {C}
+       16.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       20.8,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.6,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.355,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.464;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA July (DB=>MCWB) .4%, MaxDB=36.0C MWB=19.1C taub=0.361 taud=2.445
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field July .4% Condns DB=>MCWB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       36.0,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.1,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA August (DB=>MCWB) .4%, MaxDB=37.1C MWB=19.7C taub=0.341 taud=2.502
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field August .4% Condns DB=>MCWB,     !- Name
+          8,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       37.1,      !- Maximum Dry-Bulb Temperature {C}
+       16.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.7,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.502;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA September (DB=>MCWB) .4%, MaxDB=37.2C MWB=18.7C taub=0.341 taud=2.496
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field September .4% Condns DB=>MCWB,     !- Name
+          9,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       37.2,      !- Maximum Dry-Bulb Temperature {C}
+       17.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.7,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.496;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA October (DB=>MCWB) .4%, MaxDB=32.6C MWB=16.9C taub=0.325 taud=2.581
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field October .4% Condns DB=>MCWB,     !- Name
+         10,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       32.6,      !- Maximum Dry-Bulb Temperature {C}
+       15.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       16.9,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.325,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.581;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA November (DB=>MCWB) .4%, MaxDB=24.2C MWB=15.1C taub=0.318 taud=2.573
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field November .4% Condns DB=>MCWB,     !- Name
+         11,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       24.2,      !- Maximum Dry-Bulb Temperature {C}
+       12.6,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       15.1,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.7,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.318,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.573;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA December (DB=>MCWB) .4%, MaxDB=18.8C MWB=9.3C taub=0.321 taud=2.562
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field December .4% Condns DB=>MCWB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       18.8,      !- Maximum Dry-Bulb Temperature {C}
+       10.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+        9.3,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.321,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.562;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA January (DB=>MCWB) 2%, MaxDB=17.6C MWB=11.5C taub=0.320 taud=2.560
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field January 2% Condns DB=>MCWB,     !- Name
+          1,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       17.6,      !- Maximum Dry-Bulb Temperature {C}
+        9.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       11.5,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.320,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.560;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA February (DB=>MCWB) 2%, MaxDB=20.8C MWB=14.2C taub=0.324 taud=2.550
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field February 2% Condns DB=>MCWB,     !- Name
+          2,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       20.8,      !- Maximum Dry-Bulb Temperature {C}
+       10.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       14.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.324,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.550;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA March (DB=>MCWB) 2%, MaxDB=22.5C MWB=14.9C taub=0.334 taud=2.518
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field March 2% Condns DB=>MCWB,     !- Name
+          3,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       22.5,      !- Maximum Dry-Bulb Temperature {C}
+       11.2,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       14.9,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.334,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.518;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA April (DB=>MCWB) 2%, MaxDB=27.1C MWB=16.6C taub=0.354 taud=2.428
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field April 2% Condns DB=>MCWB,     !- Name
+          4,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       27.1,      !- Maximum Dry-Bulb Temperature {C}
+       12.4,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       16.6,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.8,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.354,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.428;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA May (DB=>MCWB) 2%, MaxDB=29.0C MWB=17.4C taub=0.359 taud=2.444
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field May 2% Condns DB=>MCWB,     !- Name
+          5,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       29.0,      !- Maximum Dry-Bulb Temperature {C}
+       13.4,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       17.4,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.359,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.444;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA June (DB=>MCWB) 2%, MaxDB=32.9C MWB=19.3C taub=0.355 taud=2.464
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field June 2% Condns DB=>MCWB,     !- Name
+          6,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       32.9,      !- Maximum Dry-Bulb Temperature {C}
+       16.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.3,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.6,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.355,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.464;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA July (DB=>MCWB) 2%, MaxDB=32.6C MWB=19.6C taub=0.361 taud=2.445
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field July 2% Condns DB=>MCWB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       32.6,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.6,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA August (DB=>MCWB) 2%, MaxDB=32.8C MWB=19.2C taub=0.341 taud=2.502
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field August 2% Condns DB=>MCWB,     !- Name
+          8,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       32.8,      !- Maximum Dry-Bulb Temperature {C}
+       16.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.502;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA September (DB=>MCWB) 2%, MaxDB=33.9C MWB=18.3C taub=0.341 taud=2.496
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field September 2% Condns DB=>MCWB,     !- Name
+          9,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       33.9,      !- Maximum Dry-Bulb Temperature {C}
+       17.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.3,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.496;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA October (DB=>MCWB) 2%, MaxDB=29.7C MWB=15.9C taub=0.325 taud=2.581
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field October 2% Condns DB=>MCWB,     !- Name
+         10,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       29.7,      !- Maximum Dry-Bulb Temperature {C}
+       15.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       15.9,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.325,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.581;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA November (DB=>MCWB) 2%, MaxDB=22.6C MWB=14.3C taub=0.318 taud=2.573
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field November 2% Condns DB=>MCWB,     !- Name
+         11,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       22.6,      !- Maximum Dry-Bulb Temperature {C}
+       12.6,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       14.3,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.7,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.318,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.573;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA December (DB=>MCWB) 2%, MaxDB=17.2C MWB=11.9C taub=0.321 taud=2.562
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field December 2% Condns DB=>MCWB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       17.2,      !- Maximum Dry-Bulb Temperature {C}
+       10.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       11.9,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.321,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.562;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA January (WB=>MCDB) .4%, DB=16.5C WB=15.0C taub=0.320 taud=2.560
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field January .4% Condns WB=>MCDB,     !- Name
+          1,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       16.5,      !- Maximum Dry-Bulb Temperature {C}
+        9.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       15.0,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.320,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.560;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA February (WB=>MCDB) .4%, DB=20.6C WB=16.1C taub=0.324 taud=2.550
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field February .4% Condns WB=>MCDB,     !- Name
+          2,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       20.6,      !- Maximum Dry-Bulb Temperature {C}
+       10.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       16.1,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.324,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.550;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA March (WB=>MCDB) .4%, DB=23.3C WB=17.3C taub=0.334 taud=2.518
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field March .4% Condns WB=>MCDB,     !- Name
+          3,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       23.3,      !- Maximum Dry-Bulb Temperature {C}
+       11.2,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       17.3,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.334,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.518;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA April (WB=>MCDB) .4%, DB=27.4C WB=19.2C taub=0.354 taud=2.428
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field April .4% Condns WB=>MCDB,     !- Name
+          4,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       27.4,      !- Maximum Dry-Bulb Temperature {C}
+       12.4,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.8,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.354,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.428;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA May (WB=>MCDB) .4%, DB=30.1C WB=20.2C taub=0.359 taud=2.444
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field May .4% Condns WB=>MCDB,     !- Name
+          5,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       30.1,      !- Maximum Dry-Bulb Temperature {C}
+       13.4,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       20.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.359,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.444;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA June (WB=>MCDB) .4%, DB=34.0C WB=22.0C taub=0.355 taud=2.464
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field June .4% Condns WB=>MCDB,     !- Name
+          6,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       34.0,      !- Maximum Dry-Bulb Temperature {C}
+       16.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       22.0,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.6,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.355,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.464;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA July (WB=>MCDB) .4%, DB=32.8C WB=21.5C taub=0.361 taud=2.445
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field July .4% Condns WB=>MCDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       32.8,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       21.5,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA August (WB=>MCDB) .4%, DB=32.6C WB=21.2C taub=0.341 taud=2.502
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field August .4% Condns WB=>MCDB,     !- Name
+          8,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       32.6,      !- Maximum Dry-Bulb Temperature {C}
+       16.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       21.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.502;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA September (WB=>MCDB) .4%, DB=32.2C WB=20.7C taub=0.341 taud=2.496
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field September .4% Condns WB=>MCDB,     !- Name
+          9,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       32.2,      !- Maximum Dry-Bulb Temperature {C}
+       17.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       20.7,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.496;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA October (WB=>MCDB) .4%, DB=26.2C WB=19.4C taub=0.325 taud=2.581
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field October .4% Condns WB=>MCDB,     !- Name
+         10,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       26.2,      !- Maximum Dry-Bulb Temperature {C}
+       15.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.4,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.325,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.581;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA November (WB=>MCDB) .4%, DB=22.6C WB=17.4C taub=0.318 taud=2.573
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field November .4% Condns WB=>MCDB,     !- Name
+         11,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       22.6,      !- Maximum Dry-Bulb Temperature {C}
+       12.6,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       17.4,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.7,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.318,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.573;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA December (WB=>MCDB) .4%, DB=16.6C WB=15.8C taub=0.321 taud=2.562
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field December .4% Condns WB=>MCDB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       16.6,      !- Maximum Dry-Bulb Temperature {C}
+       10.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       15.8,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.321,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.562;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA January (WB=>MCDB) 2%, MaxDB=15.5C MWB=13.9C taub=0.320 taud=2.560
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field January 2% Condns WB=>MCDB,     !- Name
+          1,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       15.5,      !- Maximum Dry-Bulb Temperature {C}
+        9.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       13.9,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.320,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.560;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA February (WB=>MCDB) 2%, MaxDB=18.6C MWB=15.0C taub=0.324 taud=2.550
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field February 2% Condns WB=>MCDB,     !- Name
+          2,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       18.6,      !- Maximum Dry-Bulb Temperature {C}
+       10.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       15.0,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.324,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.550;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA March (WB=>MCDB) 2%, MaxDB=20.2C MWB=15.7C taub=0.334 taud=2.518
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field March 2% Condns WB=>MCDB,     !- Name
+          3,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       20.2,      !- Maximum Dry-Bulb Temperature {C}
+       11.2,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       15.7,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.334,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.518;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA April (WB=>MCDB) 2%, MaxDB=25.1C MWB=17.4C taub=0.354 taud=2.428
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field April 2% Condns WB=>MCDB,     !- Name
+          4,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       25.1,      !- Maximum Dry-Bulb Temperature {C}
+       12.4,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       17.4,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.8,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.354,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.428;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA May (WB=>MCDB) 2%, MaxDB=27.7C MWB=18.2C taub=0.359 taud=2.444
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field May 2% Condns WB=>MCDB,     !- Name
+          5,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       27.7,      !- Maximum Dry-Bulb Temperature {C}
+       13.4,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.359,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.444;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA June (WB=>MCDB) 2%, MaxDB=31.1C MWB=20.5C taub=0.355 taud=2.464
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field June 2% Condns WB=>MCDB,     !- Name
+          6,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       31.1,      !- Maximum Dry-Bulb Temperature {C}
+       16.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       20.5,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.6,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.355,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.464;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA July (WB=>MCDB) 2%, MaxDB=30.7C MWB=20.4C taub=0.361 taud=2.445
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field July 2% Condns WB=>MCDB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       30.7,      !- Maximum Dry-Bulb Temperature {C}
+       17.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       20.4,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA August (WB=>MCDB) 2%, MaxDB=30.3C MWB=20.1C taub=0.341 taud=2.502
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field August 2% Condns WB=>MCDB,     !- Name
+          8,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       30.3,      !- Maximum Dry-Bulb Temperature {C}
+       16.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       20.1,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.502;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA September (WB=>MCDB) 2%, MaxDB=30.0C MWB=19.6C taub=0.341 taud=2.496
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field September 2% Condns WB=>MCDB,     !- Name
+          9,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       30.0,      !- Maximum Dry-Bulb Temperature {C}
+       17.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.6,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.496;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA October (WB=>MCDB) 2%, MaxDB=25.0C MWB=18.0C taub=0.325 taud=2.581
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field October 2% Condns WB=>MCDB,     !- Name
+         10,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       25.0,      !- Maximum Dry-Bulb Temperature {C}
+       15.9,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.0,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.325,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.581;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA November (WB=>MCDB) 2%, MaxDB=19.9C MWB=16.3C taub=0.318 taud=2.573
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field November 2% Condns WB=>MCDB,     !- Name
+         11,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       19.9,      !- Maximum Dry-Bulb Temperature {C}
+       12.6,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       16.3,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.7,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.318,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.573;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA December (WB=>MCDB) 2%, MaxDB=15.5C MWB=14.6C taub=0.321 taud=2.562
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field December 2% Condns WB=>MCDB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       15.5,      !- Maximum Dry-Bulb Temperature {C}
+       10.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       14.6,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+           ,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.321,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.562;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA January (DB=>MCWB) 5%, MaxDB=15.9C MWB=11.5C taub=0.320 taud=2.560
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field January 5% Condns DB=>MCWB,     !- Name
+          1,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       15.9,      !- Maximum Dry-Bulb Temperature {C}
+       13.6,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       11.5,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        8.4,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.320,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.560;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA February (DB=>MCWB) 5%, MaxDB=18.0C MWB=12.4C taub=0.324 taud=2.550
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field February 5% Condns DB=>MCWB,     !- Name
+          2,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       18.0,      !- Maximum Dry-Bulb Temperature {C}
+       15.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       12.4,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        8.8,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.324,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.550;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA March (DB=>MCWB) 5%, MaxDB=20.0C MWB=13.6C taub=0.334 taud=2.518
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field March 5% Condns DB=>MCWB,     !- Name
+          3,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       20.0,      !- Maximum Dry-Bulb Temperature {C}
+       15.7,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       13.6,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        8.9,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.4,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.334,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.518;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA April (DB=>MCWB) 5%, MaxDB=23.0C MWB=15.3C taub=0.354 taud=2.428
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field April 5% Condns DB=>MCWB,     !- Name
+          4,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       23.0,      !- Maximum Dry-Bulb Temperature {C}
+       18.2,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       15.3,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        9.6,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.8,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.354,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.428;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA May (DB=>MCWB) 5%, MaxDB=25.9C MWB=16.3C taub=0.359 taud=2.444
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field May 5% Condns DB=>MCWB,     !- Name
+          5,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       25.9,      !- Maximum Dry-Bulb Temperature {C}
+       20.1,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       16.3,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        9.9,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.359,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.444;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA June (DB=>MCWB) 5%, MaxDB=30.1C MWB=18.2C taub=0.355 taud=2.464
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field June 5% Condns DB=>MCWB,     !- Name
+          6,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       30.1,      !- Maximum Dry-Bulb Temperature {C}
+       22.3,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.2,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        9.9,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.6,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.355,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.464;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA July (DB=>MCWB) 5%, MaxDB=30.1C MWB=19.1C taub=0.361 taud=2.445
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field July 5% Condns DB=>MCWB,     !- Name
+          7,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       30.1,      !- Maximum Dry-Bulb Temperature {C}
+       21.3,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       19.1,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        9.6,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.5,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.361,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.445;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA August (DB=>MCWB) 5%, MaxDB=29.9C MWB=18.8C taub=0.341 taud=2.502
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field August 5% Condns DB=>MCWB,     !- Name
+          8,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       29.9,      !- Maximum Dry-Bulb Temperature {C}
+       21.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       18.8,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        9.5,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.502;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA September (DB=>MCWB) 5%, MaxDB=31.2C MWB=17.9C taub=0.341 taud=2.496
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field September 5% Condns DB=>MCWB,     !- Name
+          9,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       31.2,      !- Maximum Dry-Bulb Temperature {C}
+       24.0,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       17.9,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        9.8,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        2.2,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.341,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.496;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA October (DB=>MCWB) 5%, MaxDB=27.3C MWB=15.4C taub=0.325 taud=2.581
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field October 5% Condns DB=>MCWB,     !- Name
+         10,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       27.3,      !- Maximum Dry-Bulb Temperature {C}
+       20.5,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       15.4,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        9.1,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.325,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.581;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA November (DB=>MCWB) 5%, MaxDB=20.2C MWB=13.8C taub=0.318 taud=2.573
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field November 5% Condns DB=>MCWB,     !- Name
+         11,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       20.2,      !- Maximum Dry-Bulb Temperature {C}
+       15.8,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       13.8,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        8.5,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.7,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.318,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.573;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
+ ! Marin.County.AP-Gnoss.Field_CA_USA December (DB=>MCWB) 5%, MaxDB=15.2C MWB=11.8C taub=0.321 taud=2.562
+ SizingPeriod:DesignDay,
+  Marin.County.AP-Gnoss.Field December 5% Condns DB=>MCWB,     !- Name
+         12,      !- Month
+         21,      !- Day of Month
+  SummerDesignDay,!- Day Type
+       15.2,      !- Maximum Dry-Bulb Temperature {C}
+       11.7,      !- Daily Dry-Bulb Temperature Range {C}
+ DefaultMultipliers, !- Dry-Bulb Temperature Range Modifier Type
+           ,      !- Dry-Bulb Temperature Range Modifier Day Schedule Name
+    Wetbulb,      !- Humidity Condition Type
+       11.8,      !- Wetbulb at Maximum Dry-Bulb {C}
+           ,      !- Humidity Indicating Day Schedule Name
+           ,      !- Humidity Ratio at Maximum Dry-Bulb {kgWater/kgDryAir}
+           ,      !- Enthalpy at Maximum Dry-Bulb {J/kg}
+        7.4,      !- Daily Wet-Bulb Temperature Range {deltaC}
+    101318.,      !- Barometric Pressure {Pa}
+        1.9,      !- Wind Speed {m/s} design conditions vs. traditional 3.35 m/s (7mph)
+        120,      !- Wind Direction {Degrees; N=0, S=180}
+         No,      !- Rain {Yes/No}
+         No,      !- Snow on ground {Yes/No}
+         No,      !- Daylight Savings Time Indicator
+       ASHRAETau, !- Solar Model Indicator
+           ,      !- Beam Solar Day Schedule Name
+           ,      !- Diffuse Solar Day Schedule Name
+      0.321,      !- ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+      2.562;      !- ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+ 
